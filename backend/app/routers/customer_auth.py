@@ -28,11 +28,7 @@ def table_login(
     
     # Create session
     session_service = TableSessionService(db)
-    
-    try:
-        session = session_service.create_session(table_id=table.id)
-    except ActiveSessionExistsError:
-        raise HTTPException(status_code=400, detail="Active session already exists for this table")
+    session = session_service.create_session(table_id=table.id)
     
     return TableLoginResponse(
         session_token=session.session_token,

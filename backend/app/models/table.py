@@ -10,6 +10,7 @@ class Table(Base):
     id = Column(Integer, primary_key=True, index=True)
     store_id = Column(Integer, ForeignKey("stores.id"), nullable=False, index=True)
     table_number = Column(String(20), nullable=False)
+    capacity = Column(Integer, default=4, nullable=False)
     qr_code = Column(String(255), unique=True, nullable=False, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

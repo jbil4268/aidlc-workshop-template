@@ -16,20 +16,20 @@ class TableSessionService:
     def create_session(self, table_id: int) -> TableSession:
         """
         Create a new table session.
+        If an active session exists, it will be automatically ended.
         
         Args:
             table_id: Table ID
             
         Returns:
             Created TableSession object
-            
-        Raises:
-            ActiveSessionExistsError: If active session already exists for this table
         """
-        # Check for existing active session
+        # Check for existing active session and end it
         active = self.get_active_session(table_id)
         if active:
-            raise ActiveSessionExistsError(f"Active session already exists for table {table_id}")
+            # Automatically end the existing session
+            active.ended_at = datetime.utcnow()
+            self.db.commit()
         
         # Generate session token
         session_token = secrets.token_urlsafe(32)

@@ -798,3 +798,213 @@ Current project scope is limited to local development environment only.
 **Context**: Admin Frontend 완전 수정 - 로그인, CSS, API 엔드포인트 모두 해결
 
 ---
+
+## Menu Management - Add Menu Modal Implementation
+**Timestamp**: 2026-02-09T08:25:00Z
+**User Input**: "잘 실행되는데, 메뉴 추가에서 메뉴 추가 버튼 눌렀을 때 아무 반응이 없어. 백엔드 쪽에서는 웹소켓 에러가 계속 나와"
+**AI Response**: 메뉴 추가 기능 구현 및 WebSocket 에러 설명:
+
+1. **메뉴 추가 모달 구현**:
+   - MenuManagementPage.vue에 메뉴 추가 모달 UI 추가
+   - 폼 필드: 메뉴명, 설명, 가격, 카테고리 ID, 판매 가능 여부
+   - addMenu 함수 구현: POST /api/admin/menu/create
+   - 모달 닫기 및 폼 초기화 로직 추가
+
+2. **API 엔드포인트 수정**:
+   - Backend 확인: POST /api/admin/menu/create (not /api/admin/menu)
+   - Frontend 수정: /api/admin/menu → /api/admin/menu/create
+
+3. **WebSocket 에러 설명**:
+   - Vite의 HMR(Hot Module Replacement)이 /ws 엔드포인트로 WebSocket 연결 시도
+   - Backend의 WebSocket 라우터가 인증을 요구하여 403 Forbidden 발생
+   - 이는 개발 환경에서 정상적인 동작이며 애플리케이션 기능에 영향 없음
+   - Vite HMR은 자체 WebSocket을 사용하므로 무시 가능
+
+**Context**: Menu Management 기능 완성 - 메뉴 추가 모달 구현
+
+---
+
+## Table & Category Management - Add Modals Implementation
+**Timestamp**: 2026-02-09T08:35:00Z
+**User Input**: "테이블 메뉴에서 등록도 반응이 없어"
+**AI Response**: 테이블 및 카테고리 관리 페이지에 추가 모달 구현:
+
+1. **테이블 추가 모달 구현**:
+   - TableManagementPage.vue에 테이블 추가 모달 UI 추가
+   - 폼 필드: 테이블 번호, 수용 인원, 활성 상태
+   - addTable 함수 구현: POST /api/admin/table/create
+   - 모달 닫기 및 폼 초기화 로직 추가
+
+2. **카테고리 추가 모달 구현**:
+   - CategoryManagementPage.vue에 카테고리 추가 모달 UI 추가
+   - 폼 필드: 카테고리명, 표시 순서
+   - addCategory 함수 구현: POST /api/admin/category/create
+   - 모달 닫기 및 폼 초기화 로직 추가
+
+3. **API 엔드포인트 확인**:
+   - Backend 라우터 모두 /create 엔드포인트 사용
+   - admin_table: POST /api/admin/table/create
+   - admin_category: POST /api/admin/category/create
+   - admin_menu: POST /api/admin/menu/create
+
+**Context**: 모든 관리 페이지의 추가 기능 완성
+
+---
+
+## Table Management - Schema Fix
+**Timestamp**: 2026-02-09T08:45:00Z
+**User Input**: "테이블 생성할 때 에러 INFO: 127.0.0.1:52896 - 'POST /api/admin/table/create HTTP/1.1' 422 Unprocessable Entity"
+**AI Response**: 테이블 생성 스키마 불일치 문제 해결:
+
+1. **Backend 스키마 확인**:
+   - TableCreate 필수 필드: table_number, qr_code
+   - capacity, is_active 필드는 스키마에 없음
+
+2. **Frontend 수정**:
+   - newTable 객체: capacity, is_active 제거 → qr_code 추가
+   - 모달 폼: 수용 인원, 활성 상태 입력 제거 → QR 코드 입력 추가
+   - 테이블 목록 표시: capacity 제거 → qr_code 표시
+
+3. **수정된 필드**:
+   - table_number: 테이블 번호 (예: T-01)
+   - qr_code: QR 코드 식별자 (예: QR-T01-STORE1)
+
+**Context**: 테이블 생성 422 에러 해결 - Backend 스키마와 Frontend 일치
+
+---
+
+## Table Management - Add Capacity Field
+**Timestamp**: 2026-02-09T08:50:00Z
+**User Input**: "수용 인원은 있어야 돼"
+**AI Response**: 테이블에 수용 인원(capacity) 필드 추가:
+
+1. **Backend 스키마 수정**:
+   - table.py 스키마: TableBase에 capacity 필드 추가 (기본값: 4)
+   - TableCreate: table_number, capacity, qr_code
+   - TableResponse: capacity 필드 포함
+
+2. **Backend 모델 수정**:
+   - table.py 모델: capacity 컬럼 추가 (Integer, default=4, nullable=False)
+
+3. **데이터베이스 마이그레이션**:
+   - 002_add_table_capacity.py 마이그레이션 파일 생성
+   - alembic upgrade head 실행 성공
+   - tables 테이블에 capacity 컬럼 추가됨
+
+4. **Frontend 수정**:
+   - TableManagementPage.vue: capacity 필드 복원
+   - 모달 폼: 테이블 번호, 수용 인원, QR 코드 입력
+   - 테이블 목록: 수용 인원 표시 추가
+
+**Context**: 테이블 관리 완성 - 수용 인원 필드 포함
+
+---
+
+## Customer Frontend - Table Dropdown Selection
+**Timestamp**: 2026-02-09T09:00:00Z
+**User Input**: "Customer FE에서 Table을 직접 입력하지 않고 dropdown에서 선택할 수 있게 해줘"
+**AI Response**: Customer Frontend의 테이블 선택 방식을 드롭다운으로 변경:
+
+1. **QRScanPage.vue 수정**:
+   - 테이블 목록 로드: GET /api/admin/table/list
+   - onMounted에서 loadTables() 호출
+   - tables ref 추가하여 테이블 목록 저장
+
+2. **UI 변경**:
+   - 기존: input type="number"로 테이블 ID 직접 입력
+   - 변경: select 드롭다운으로 테이블 선택
+   - 옵션 표시: "테이블번호 (수용인원명)" 형식
+   - 예: "T-01 (4명)"
+
+3. **에러 메시지 수정**:
+   - "테이블 ID를 입력해주세요" → "테이블을 선택해주세요"
+
+4. **Customer Frontend 재시작**:
+   - npm run dev 실행
+
+**Context**: Customer Frontend UX 개선 - 테이블 드롭다운 선택
+
+---
+
+## Customer Frontend - API Endpoint Fix
+**Timestamp**: 2026-02-09T09:10:00Z
+**User Input**: "INFO: 127.0.0.1:56468 - 'POST /customer/auth/login HTTP/1.1' 404 Not Found"
+**AI Response**: Customer Frontend의 모든 API 호출에 /api 접두사 추가:
+
+1. **문제 확인**:
+   - Backend 라우터: /api/customer/auth/login
+   - Frontend 호출: /customer/auth/login (잘못됨)
+   - /api 접두사 누락으로 404 에러 발생
+
+2. **수정된 API 엔드포인트**:
+   - QRScanPage.vue:
+     - /customer/auth/login → /api/customer/auth/login
+   - MenuListPage.vue:
+     - /customer/menu/categories → /api/customer/menu/categories
+     - /customer/menu → /api/customer/menu
+   - OrderPage.vue:
+     - /customer/orders → /api/customer/orders
+   - OrderStatusPage.vue:
+     - /customer/orders → /api/customer/orders
+     - /customer/auth/logout → /api/customer/auth/logout
+
+3. **일관성 확보**:
+   - Admin Frontend: /api/admin/* 사용
+   - Customer Frontend: /api/customer/* 사용
+   - 모든 API 호출이 /api 접두사로 통일
+
+**Context**: Customer Frontend API 엔드포인트 수정 완료
+
+---
+
+## Customer Frontend - QR Code Login Fix
+**Timestamp**: 2026-02-09T09:15:00Z
+**User Input**: "[ { 'type': 'missing', 'loc': [ 'body', 'qr_code' ], 'msg': 'Field required' } ]"
+**AI Response**: Customer 로그인 시 qr_code 필드 누락 문제 해결:
+
+1. **문제 확인**:
+   - Backend TableLoginRequest: qr_code 필드 필요
+   - Frontend: table_id를 전송 (잘못됨)
+   - Backend는 qr_code로 테이블을 조회
+
+2. **QRScanPage.vue 수정**:
+   - loginManual: 선택한 테이블의 qr_code를 찾아서 전송
+   - loginWithTableId → loginWithQRCode로 함수명 변경
+   - QR 스캔 시: qr_code를 그대로 사용
+   - 드롭다운 선택 시: 선택한 테이블의 qr_code 사용
+
+3. **세션 저장 수정**:
+   - session_id → session_token으로 변경 (Backend 응답과 일치)
+   - table_id는 드롭다운 선택 시 사용, QR 스캔 시는 응답에서 가져옴
+
+**Context**: Customer 로그인 qr_code 필드 수정 완료
+
+---
+
+## Backend - Auto-End Active Sessions
+**Timestamp**: 2026-02-09T09:25:00Z
+**User Input**: "Active session already exists for this table 여전히 이렇게 나와" → "2"
+**AI Response**: 기존 활성 세션 자동 종료 기능 구현:
+
+1. **clear_sessions.py 스크립트 생성**:
+   - 모든 활성 세션을 수동으로 종료하는 유틸리티
+   - 실행 결과: 2개의 활성 세션 종료
+
+2. **TableSessionService 수정**:
+   - create_session 메서드 로직 변경
+   - 기존: ActiveSessionExistsError 예외 발생
+   - 변경: 기존 활성 세션을 자동으로 종료하고 새 세션 생성
+   - ended_at을 현재 시간으로 설정하여 세션 종료
+
+3. **customer_auth 라우터 수정**:
+   - ActiveSessionExistsError 예외 처리 제거
+   - create_session이 항상 성공하도록 단순화
+
+4. **사용자 경험 개선**:
+   - 이전: 활성 세션이 있으면 로그인 실패
+   - 현재: 기존 세션을 자동 종료하고 새 세션으로 로그인 성공
+   - 사용자가 여러 번 로그인 시도해도 문제 없음
+
+**Context**: 세션 관리 개선 - 자동 세션 종료 및 재생성
+
+---

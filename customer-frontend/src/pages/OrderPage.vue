@@ -164,6 +164,13 @@ const submitOrder = async () => {
     submitting.value = true
     error.value = ''
     
+    const sessionToken = sessionStorage.getItem('session_token')
+    if (!sessionToken) {
+      error.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
+      router.push('/qr-scan')
+      return
+    }
+    
     const orderData = {
       items: cart.value.map(item => ({
         menu_id: item.menu_id,
@@ -172,13 +179,20 @@ const submitOrder = async () => {
       tip_rate: selectedTipRate.value
     }
     
-    await apiClient.post('/customer/orders', orderData)
+    await apiClient.post(`/api/customer/order/create?session_token=${sessionToken}`, orderData)
     
     sessionStorage.removeItem('cart')
-    router.push('/order-status')
+    
+    // 주문 완료 메시지 표시
+    alert('주문이 완료되었습니다! 5초 후 메뉴 화면으로 이동합니다.')
+    
+    // 5초 후 메뉴 화면으로 이동
+    setTimeout(() => {
+      router.push('/menu')
+    }, 5000)
+    
   } catch (err) {
     error.value = err.response?.data?.detail || '주문에 실패했습니다'
-  } finally {
     submitting.value = false
   }
 }

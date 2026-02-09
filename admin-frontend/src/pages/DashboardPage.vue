@@ -134,10 +134,17 @@
             </button>
             <button
               v-if="order.status === 'preparing'"
-              @click="updateStatus(order.id, 'completed')"
+              @click="updateStatus(order.id, 'ready')"
               class="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
             >
-              완료
+              준비 완료
+            </button>
+            <button
+              v-if="order.status === 'ready'"
+              @click="updateStatus(order.id, 'served')"
+              class="flex-1 px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+            >
+              서빙 완료
             </button>
             <button
               v-if="order.status !== 'cancelled'"
@@ -190,7 +197,8 @@ const statuses = [
   { value: 'all', label: '전체' },
   { value: 'pending', label: '대기중' },
   { value: 'preparing', label: '준비중' },
-  { value: 'completed', label: '완료' },
+  { value: 'ready', label: '준비완료' },
+  { value: 'served', label: '서빙완료' },
   { value: 'cancelled', label: '취소됨' }
 ]
 
@@ -209,7 +217,8 @@ const getStatusLabel = (status) => {
   const statusMap = {
     'pending': '대기중',
     'preparing': '준비중',
-    'completed': '완료',
+    'ready': '준비완료',
+    'served': '서빙완료',
     'cancelled': '취소됨'
   }
   return statusMap[status] || status
@@ -219,7 +228,8 @@ const getStatusClass = (status) => {
   const classMap = {
     'pending': 'bg-yellow-100 text-yellow-800',
     'preparing': 'bg-blue-100 text-blue-800',
-    'completed': 'bg-green-100 text-green-800',
+    'ready': 'bg-green-100 text-green-800',
+    'served': 'bg-purple-100 text-purple-800',
     'cancelled': 'bg-red-100 text-red-800'
   }
   return classMap[status] || 'bg-gray-100 text-gray-800'
@@ -239,10 +249,12 @@ const loadOrders = async () => {
 }
 
 const updateStatus = async (orderId, newStatus) => {
+  console.log('updateStatus 호출:', orderId, newStatus)
   try {
-    await apiClient.patch(`/admin/orders/${orderId}/status`, {
+    const response = await apiClient.patch(`/api/admin/order/${orderId}/status`, {
       status: newStatus
     })
+    console.log('상태 업데이트 성공:', response.data)
     
     // Update local state
     const order = orders.value.find(o => o.id === orderId)
@@ -253,6 +265,7 @@ const updateStatus = async (orderId, newStatus) => {
     // Play notification sound
     playNotificationSound()
   } catch (err) {
+    console.error('상태 업데이트 에러:', err)
     alert(err.response?.data?.detail || '상태 변경에 실패했습니다')
   }
 }

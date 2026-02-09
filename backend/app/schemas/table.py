@@ -5,6 +5,7 @@ from datetime import datetime
 
 class TableBase(BaseModel):
     table_number: str
+    capacity: int = 4
 
 
 class TableCreate(TableBase):
@@ -20,6 +21,7 @@ class TableResponse(TableBase):
     id: int
     store_id: int
     qr_code: str
+    capacity: int
     is_active: bool
 
     class Config:

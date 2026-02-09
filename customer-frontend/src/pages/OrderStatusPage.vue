@@ -130,8 +130,17 @@ const goToMenu = () => {
 
 const loadOrders = async () => {
   try {
-    const response = await apiClient.get('/customer/orders')
-    orders.value = response.data
+    const sessionToken = sessionStorage.getItem('session_token')
+    console.log('session_token:', sessionToken)
+    
+    if (!sessionToken) {
+      error.value = '세션이 만료되었습니다. 다시 로그인해주세요.'
+      router.push('/qr-scan')
+      return
+    }
+    
+    const response = await apiClient.get(`/api/customer/order/list?session_token=${sessionToken}`)
+    orders.value = response.data.orders || response.data
     loading.value = false
   } catch (err) {
     error.value = err.response?.data?.detail || '주문 내역을 불러오는데 실패했습니다'
@@ -145,11 +154,24 @@ const endSession = async () => {
   }
   
   try {
-    await apiClient.post('/customer/auth/logout')
+    const sessionToken = sessionStorage.getItem('session_token')
+    
+    if (!sessionToken) {
+      alert('세션 정보가 없습니다')
+      sessionStorage.clear()
+      router.push('/qr-scan')
+      return
+    }
+    
+    await apiClient.post('/api/customer/auth/logout', null, {
+      params: { session_token: sessionToken }
+    })
+    
     sessionStorage.clear()
     router.push('/qr-scan')
   } catch (err) {
-    alert('세션 종료에 실패했습니다')
+    console.error('세션 종료 에러:', err)
+    alert(err.response?.data?.detail || '세션 종료에 실패했습니다')
   }
 }
 

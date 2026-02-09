@@ -3,15 +3,23 @@
     <header class="bg-white shadow-sm sticky top-0 z-10">
       <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
         <h1 class="text-xl font-bold">메뉴</h1>
-        <button
-          @click="goToCart"
-          class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-        >
-          장바구니
-          <span v-if="cartCount > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-            {{ cartCount }}
-          </span>
-        </button>
+        <div class="flex gap-2">
+          <button
+            @click="goToOrderStatus"
+            class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+          >
+            주문 이력
+          </button>
+          <button
+            @click="goToCart"
+            class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            장바구니
+            <span v-if="cartCount > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+              {{ cartCount }}
+            </span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -117,18 +125,19 @@ const goToCart = () => {
   router.push('/order')
 }
 
+const goToOrderStatus = () => {
+  router.push('/order-status')
+}
+
 const loadData = async () => {
   try {
     loading.value = true
     error.value = ''
     
-    const [categoriesRes, menusRes] = await Promise.all([
-      apiClient.get('/customer/menu/categories'),
-      apiClient.get('/customer/menu')
-    ])
+    const response = await apiClient.get('/api/customer/menu/list')
     
-    categories.value = categoriesRes.data
-    menus.value = menusRes.data
+    categories.value = response.data.categories || []
+    menus.value = response.data.menus || []
   } catch (err) {
     error.value = err.response?.data?.detail || '메뉴를 불러오는데 실패했습니다'
   } finally {
